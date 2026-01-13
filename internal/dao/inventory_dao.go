@@ -33,6 +33,19 @@ func (d *InventoryDao) GetByMaterialAndBatch(materialID uint, batchNo string) (*
 	return &inv, err
 }
 
+// GetByInboundNo 根据入库单号查询库存
+//
+// 参数:
+//   inboundNo: 入库单号
+// 返回值:
+//   *models.Inventory: 库存模型
+//   error: 错误信息
+func (d *InventoryDao) GetByInboundNo(inboundNo string) (*models.Inventory, error) {
+	var inv models.Inventory
+	err := DB.Where("inbound_no = ?", inboundNo).First(&inv).Error
+	return &inv, err
+}
+
 // Update 更新库存信息
 //
 // 参数:

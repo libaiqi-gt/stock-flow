@@ -72,6 +72,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/inventory/import": {
+            "post": {
+                "description": "上传Excel文件(.xls/.xlsx)批量导入库存信息，文件大小限制10MB",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inventory"
+                ],
+                "summary": "批量导入库存",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Excel文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "导入结果",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/services.BatchImportResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/inventory/inbound": {
             "post": {
                 "description": "耗材批量入库接口，支持自动创建新物料或追加库存",
@@ -519,6 +563,26 @@ const docTemplate = `{
                 "timestamp": {
                     "description": "Timestamp 响应生成时间戳\n格式：ISO8601 (2006-01-02T15:04:05Z07:00)",
                     "type": "string"
+                }
+            }
+        },
+        "services.BatchImportResult": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

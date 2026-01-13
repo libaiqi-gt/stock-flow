@@ -9,7 +9,7 @@ type Inventory struct {
 	MaterialID uint      `gorm:"index;not null" json:"material_id"`            // 关联耗材ID
 	Material   Material  `gorm:"foreignKey:MaterialID" json:"material"`        // 耗材详情(关联查询用)
 	BatchNo    string    `gorm:"type:varchar(50);not null" json:"batch_no"`    // 内部批号(管控核心)
-	InboundNo  string    `gorm:"type:varchar(50)" json:"inbound_no"`           // 入库单号
+	InboundNo  string    `gorm:"type:varchar(50);unique;not null" json:"inbound_no"` // 入库单号(唯一标识)
 	InitialQty int64     `gorm:"not null" json:"initial_qty"`                  // 初始入库数量
 	CurrentQty int64     `gorm:"not null" json:"current_qty"`                  // 当前剩余数量(动态变化)
 	ExpiryDate time.Time `gorm:"type:date;index" json:"expiry_date"`           // 有效期(用于效期预警)

@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"path/filepath"
 	"stock-flow/internal/pkg/response"
 	"stock-flow/internal/services"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,7 +13,14 @@ import (
 // InventoryController 库存控制器
 // 处理入库、库存查询和效期预警
 type InventoryController struct {
-	inventoryService services.InventoryService
+	inventoryService *services.InventoryService
+}
+
+// NewInventoryController creates a new InventoryController
+func NewInventoryController() *InventoryController {
+	return &InventoryController{
+		inventoryService: services.NewInventoryService(),
+	}
 }
 
 // Inbound
@@ -36,6 +45,53 @@ func (ctrl *InventoryController) Inbound(c *gin.Context) {
 	}
 
 	response.Success[any](c, nil)
+}
+
+// BatchImport
+// @Summary 批量导入库存
+// @Description 上传Excel文件(.xls/.xlsx)批量导入库存信息，文件大小限制10MB
+// @Tags Inventory
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Excel文件"
+// @Success 200 {object} response.Response{data=services.BatchImportResult} "导入结果"
+// @Router /api/v1/inventory/import [post]
+func (ctrl *InventoryController) BatchImport(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.Error(c, response.CodeBadRequest, "请上传文件")
+		return
+	}
+
+	// 1. Check file size (10MB limit)
+	if file.Size > 10*1024*1024 {
+		response.Error(c, response.CodeBadRequest, "文件大小不能超过10MB")
+		return
+	}
+
+	// 2. Check extension
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if ext != ".xlsx" && ext != ".xls" {
+		response.Error(c, response.CodeBadRequest, "仅支持 .xlsx 或 .xls 格式")
+		return
+	}
+
+	// 3. Open file
+	f, err := file.Open()
+	if err != nil {
+		response.Error(c, response.CodeServerError, "文件读取失败")
+		return
+	}
+	defer f.Close()
+
+	// 4. Process import
+	result, err := ctrl.inventoryService.BatchImport(f, ext)
+	if err != nil {
+		response.Error(c, response.CodeServerError, err.Error())
+		return
+	}
+
+	response.Success(c, result)
 }
 
 // List

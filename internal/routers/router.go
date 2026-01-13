@@ -20,7 +20,7 @@ func InitRouter() *gin.Engine {
 	// Controllers
 	authCtrl := new(controllers.AuthController)
 	matCtrl := new(controllers.MaterialController)
-	invCtrl := new(controllers.InventoryController)
+	invCtrl := controllers.NewInventoryController()
 	outCtrl := new(controllers.OutboundController)
 
 	// Public
@@ -47,10 +47,11 @@ func InitRouter() *gin.Engine {
 		{
 			// Inbound (Keeper)
 			inv.POST("/inbound", middleware.RoleAuth("Admin", "Keeper"), invCtrl.Inbound)
-			
+			inv.POST("/import", middleware.RoleAuth("Admin", "Keeper"), invCtrl.BatchImport)
+
 			// List (All)
 			inv.GET("", invCtrl.List)
-			
+
 			// Recommend (All)
 			inv.GET("/recommend", invCtrl.RecommendedBatches)
 		}

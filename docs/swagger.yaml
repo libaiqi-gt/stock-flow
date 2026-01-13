@@ -101,6 +101,19 @@ definitions:
           格式：ISO8601 (2006-01-02T15:04:05Z07:00)
         type: string
     type: object
+  services.BatchImportResult:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      failed:
+        type: integer
+      success:
+        type: integer
+      total:
+        type: integer
+    type: object
   services.InboundDTO:
     properties:
       batchNo:
@@ -181,6 +194,32 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 库存总表查询
+      tags:
+      - Inventory
+  /api/v1/inventory/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传Excel文件(.xls/.xlsx)批量导入库存信息，文件大小限制10MB
+      parameters:
+      - description: Excel文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 导入结果
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/services.BatchImportResult'
+              type: object
+      summary: 批量导入库存
       tags:
       - Inventory
   /api/v1/inventory/inbound:
