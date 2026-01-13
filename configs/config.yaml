@@ -1,0 +1,22 @@
+server:
+  port: 8080
+  mode: debug
+
+database:
+  type: mysql
+  user: root
+  password: 123456
+  host: 127.0.0.1
+  port: 3306
+  name: stock_flow
+  table_prefix: ""
+  auto_migrate: false
+
+jwt:
+  secret: "stock-flow-secret-key-2026"
+  issuer: "stock-flow"
+  expire: 24h
+
+log:
+  level: debug
+  filename: "app.log"

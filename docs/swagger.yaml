@@ -1,0 +1,398 @@
+basePath: /
+definitions:
+  controllers.ApplyOutboundReq:
+    properties:
+      inventory_id:
+        description: 库存ID
+        type: integer
+      purpose:
+        description: 领用用途
+        type: string
+      quantity:
+        description: 领用数量(>0)
+        type: integer
+    required:
+    - inventory_id
+    - purpose
+    - quantity
+    type: object
+  controllers.LoginReq:
+    properties:
+      password:
+        description: 密码
+        type: string
+      username:
+        description: 用户名
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controllers.RegisterReq:
+    properties:
+      password:
+        description: 密码
+        type: string
+      real_name:
+        description: 真实姓名
+        type: string
+      username:
+        description: 用户名
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  models.Material:
+    properties:
+      brand:
+        description: 厂家/品牌
+        type: string
+      category:
+        description: '物料类型(如: 试剂、耗材)'
+        type: string
+      code:
+        description: 物料编码(唯一标识)
+        type: string
+      created_at:
+        description: 创建时间
+        type: string
+      id:
+        description: 主键ID
+        type: integer
+      name:
+        description: 物料名称
+        type: string
+      spec:
+        description: 规格型号
+        type: string
+      unit:
+        description: 计量单位
+        type: string
+      updated_at:
+        description: 更新时间
+        type: string
+    type: object
+  response.Response:
+    properties:
+      code:
+        description: |-
+          Code 业务状态码
+          200 表示成功，其他值表示具体的业务错误
+        type: integer
+      data:
+        description: |-
+          Data 业务数据
+          存放实际返回的业务数据对象或列表
+      errMsg:
+        description: |-
+          ErrMsg 错误详情
+          仅在调试模式或特定异常时返回，用于排查问题
+          omitempty 表示如果为空则不序列化该字段
+        type: string
+      msg:
+        description: |-
+          Msg 友好提示信息
+          用于前端展示给用户的消息
+        type: string
+      timestamp:
+        description: |-
+          Timestamp 响应生成时间戳
+          格式：ISO8601 (2006-01-02T15:04:05Z07:00)
+        type: string
+    type: object
+  services.InboundDTO:
+    properties:
+      batchNo:
+        description: 内部批号
+        type: string
+      brand:
+        description: 品牌
+        type: string
+      category:
+        description: 分类
+        type: string
+      expiryDate:
+        description: 有效期 (YYYY-MM-DD)
+        type: string
+      inboundNo:
+        description: 入库单号
+        type: string
+      materialCode:
+        description: 物料编码
+        type: string
+      materialName:
+        description: 物料名称
+        type: string
+      mode:
+        description: '模式: "append" 追加, "overwrite" 覆盖 (默认追加)'
+        type: string
+      quantity:
+        description: 数量
+        format: int64
+        type: integer
+      spec:
+        description: 规格
+        type: string
+      unit:
+        description: 单位
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: LIMS-Consumable Backend API
+  title: 耗材管理系统 API
+  version: "1.0"
+paths:
+  /api/v1/inventory:
+    get:
+      description: 综合查询库存状态，支持效期预警筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      - description: 物料名称
+        in: query
+        name: material_name
+        type: string
+      - description: 物料编码
+        in: query
+        name: code
+        type: string
+      - description: 批号
+        in: query
+        name: batch_no
+        type: string
+      - description: '状态: 0全部, 1正常, 2临期, 3过期'
+        in: query
+        name: status
+        type: integer
+      responses:
+        "200":
+          description: 列表数据
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 库存总表查询
+      tags:
+      - Inventory
+  /api/v1/inventory/inbound:
+    post:
+      consumes:
+      - application/json
+      description: 耗材批量入库接口，支持自动创建新物料或追加库存
+      parameters:
+      - description: 入库信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/services.InboundDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 耗材入库
+      tags:
+      - Inventory
+  /api/v1/inventory/recommend:
+    get:
+      description: 根据 FEFO (先失效先出) 策略推荐领用批次
+      parameters:
+      - description: 物料ID
+        in: query
+        name: material_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: 推荐批次列表
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 智能推荐批次 (FEFO)
+      tags:
+      - Inventory
+  /api/v1/materials:
+    get:
+      description: 分页查询耗材基础信息，支持模糊搜索
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      - description: 物料名称(模糊)
+        in: query
+        name: name
+        type: string
+      responses:
+        "200":
+          description: 列表数据
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 查询耗材列表
+      tags:
+      - Material
+    post:
+      consumes:
+      - application/json
+      description: 录入新的耗材信息(需管理员或库管员权限)
+      parameters:
+      - description: 耗材信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Material'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 创建耗材基础信息
+      tags:
+      - Material
+  /api/v1/outbound/{id}/status:
+    put:
+      description: '更新领用记录的状态(如: USING -> FINISHED)'
+      parameters:
+      - description: 记录ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 新状态 (USING/FINISHED)
+        in: query
+        name: status
+        required: true
+        type: string
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 更新使用状态
+      tags:
+      - Outbound
+  /api/v1/outbound/apply:
+    post:
+      consumes:
+      - application/json
+      description: 提交领用申请，扣减库存并生成记录
+      parameters:
+      - description: 领用信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ApplyOutboundReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 领用申请
+      tags:
+      - Outbound
+  /api/v1/outbound/my:
+    get:
+      description: 查询当前登录用户的领用历史
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: 列表数据
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 我的领用记录
+      tags:
+      - Outbound
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户通过账号密码登录，获取 JWT Token
+      parameters:
+      - description: 登录参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 认证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 用户登录
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 开放注册接口，默认角色为 User
+      parameters:
+      - description: 注册参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.RegisterReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注册成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 用户注册
+      tags:
+      - Auth
+swagger: "2.0"
