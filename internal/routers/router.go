@@ -64,6 +64,13 @@ func InitRouter() *gin.Engine {
 			out.POST("/apply", outCtrl.Apply)
 			out.GET("/my", outCtrl.List)
 			out.PUT("/:id/status", outCtrl.UpdateStatus)
+
+			// Audit (Admin only)
+			out.POST("/audit", middleware.RoleAuth("Admin"), outCtrl.Audit)
+			out.GET("/audit/list", middleware.RoleAuth("Admin"), outCtrl.ListAudit)
+
+			// All Records (All Users)
+			out.GET("/all", outCtrl.ListAll)
 		}
 	}
 

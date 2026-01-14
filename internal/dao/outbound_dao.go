@@ -24,18 +24,23 @@ func (d *OutboundDao) Create(out *models.Outbound) error {
 //   page: 页码
 //   pageSize: 每页数量
 //   userID: 用户ID (0表示查询所有)
+//   approvalStatus: 审批状态 (空字符串表示查询所有)
 // 返回值:
 //   []models.Outbound: 记录列表
 //   int64: 总数
 //   error: 错误信息
-func (d *OutboundDao) List(page, pageSize int, userID uint) ([]models.Outbound, int64, error) {
+func (d *OutboundDao) List(page, pageSize int, userID uint, approvalStatus string) ([]models.Outbound, int64, error) {
 	var list []models.Outbound
 	var total int64
 
-	db := DB.Model(&models.Outbound{}).Preload("Inventory.Material").Preload("User")
+	db := DB.Model(&models.Outbound{}).Preload("Inventory.Material").Preload("User").Preload("Approver")
 	
 	if userID > 0 {
 		db = db.Where("user_id = ?", userID)
+	}
+
+	if approvalStatus != "" {
+		db = db.Where("approval_status = ?", approvalStatus)
 	}
 
 	err := db.Count(&total).Error

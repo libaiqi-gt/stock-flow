@@ -307,9 +307,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/outbound/all": {
+            "get": {
+                "description": "查询所有领用记录，按时间倒序排列",
+                "tags": [
+                    "Outbound"
+                ],
+                "summary": "获取所有领用记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 15,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "列表数据",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/outbound/apply": {
             "post": {
-                "description": "提交领用申请，扣减库存并生成记录",
+                "description": "提交领用申请，进入待审批状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -334,6 +367,79 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/outbound/audit": {
+            "post": {
+                "description": "管理员审批领用申请(通过/驳回)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Outbound"
+                ],
+                "summary": "审批领用申请",
+                "parameters": [
+                    {
+                        "description": "审批信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.AuditOutboundReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/outbound/audit/list": {
+            "get": {
+                "description": "管理员查询领用申请审批列表，支持按审批状态筛选",
+                "tags": [
+                    "Outbound"
+                ],
+                "summary": "获取审批列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "审批状态 (PENDING/APPROVED/REJECTED)",
+                        "name": "approval_status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "列表数据",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -505,6 +611,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "inventory_id",
+                "opening_date",
                 "purpose",
                 "quantity"
             ],
@@ -513,6 +620,10 @@ const docTemplate = `{
                     "description": "库存ID",
                     "type": "integer"
                 },
+                "opening_date": {
+                    "description": "开封日期 (YYYY-MM-DD)",
+                    "type": "string"
+                },
                 "purpose": {
                     "description": "领用用途",
                     "type": "string"
@@ -520,6 +631,30 @@ const docTemplate = `{
                 "quantity": {
                     "description": "领用数量(\u003e0)",
                     "type": "integer"
+                },
+                "remarks": {
+                    "description": "备注",
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.AuditOutboundReq": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "approved": {
+                    "description": "是否批准 (true:通过, false:驳回)",
+                    "type": "boolean"
+                },
+                "id": {
+                    "description": "领用申请ID",
+                    "type": "integer"
+                },
+                "opinion": {
+                    "description": "审批意见",
+                    "type": "string"
                 }
             }
         },

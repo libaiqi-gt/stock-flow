@@ -21,9 +21,11 @@ type LoginReq struct {
 
 // LoginResp 登录响应数据
 type LoginResp struct {
-	Token    string `json:"token"`    // JWT Token
-	Username string `json:"username"` // 用户名
-	Role     string `json:"role"`     // 角色
+	ID       uint   `json:"id"`        // 用户ID
+	Token    string `json:"token"`     // JWT Token
+	Username string `json:"username"`  // 用户名
+	RealName string `json:"real_name"` // 真实姓名
+	Role     string `json:"role"`      // 角色
 }
 
 // RegisterReq 注册请求参数
@@ -59,8 +61,10 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	}
 
 	response.Success(c, LoginResp{
+		ID:       user.ID,
 		Token:    token,
 		Username: user.Username,
+		RealName: user.RealName,
 		Role:     user.Role,
 	})
 }
