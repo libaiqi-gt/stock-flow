@@ -31,6 +31,7 @@ type RegisterReq struct {
 	Username string `json:"username" binding:"required"` // 用户名
 	Password string `json:"password" binding:"required"` // 密码
 	RealName string `json:"real_name"`                   // 真实姓名
+	Role     string `json:"role"`                        // 角色: 管理员, 操作员, 普通用户
 }
 
 // Login
@@ -66,7 +67,7 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 
 // Register
 // @Summary 用户注册
-// @Description 开放注册接口，默认角色为 User
+// @Description 开放注册接口，默认角色为 普通用户
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -82,8 +83,21 @@ func (ctrl *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// 默认注册为普通用户 (User)
-	if err := ctrl.authService.Register(req.Username, req.Password, req.RealName, "User"); err != nil {
+	// 角色映射: 中文 -> 内部标识
+	roleMap := map[string]string{
+		"管理员":  "Admin",
+		"操作员":  "Keeper",
+		"普通用户": "User",
+		"":     "User", // 默认值
+	}
+
+	internalRole, ok := roleMap[req.Role]
+	if !ok {
+		response.Error(c, response.CodeBadRequest, "角色参数无效，可选值: 管理员, 操作员, 普通用户")
+		return
+	}
+
+	if err := ctrl.authService.Register(req.Username, req.Password, req.RealName, internalRole); err != nil {
 		response.Error(c, response.CodeServerError, err.Error())
 		return
 	}

@@ -40,6 +40,7 @@ func InitRouter() *gin.Engine {
 		{
 			mat.POST("", matCtrl.Create)
 			mat.GET("", matCtrl.List)
+			mat.DELETE("/:id", matCtrl.Delete)
 		}
 
 		// Inventory
@@ -48,6 +49,7 @@ func InitRouter() *gin.Engine {
 			// Inbound (Keeper)
 			inv.POST("/inbound", middleware.RoleAuth("Admin", "Keeper"), invCtrl.Inbound)
 			inv.POST("/import", middleware.RoleAuth("Admin", "Keeper"), invCtrl.BatchImport)
+			inv.DELETE("/:id", middleware.RoleAuth("Admin", "Keeper"), invCtrl.Delete)
 
 			// List (All)
 			inv.GET("", invCtrl.List)

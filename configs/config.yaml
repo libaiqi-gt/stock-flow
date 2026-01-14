@@ -10,7 +10,7 @@ database:
   port: 3306
   name: stock_flow
   table_prefix: ""
-  auto_migrate: false
+  auto_migrate: true
 
 jwt:
   secret: "stock-flow-secret-key-2026"

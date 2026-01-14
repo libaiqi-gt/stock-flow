@@ -74,15 +74,11 @@ const docTemplate = `{
         },
         "/api/v1/inventory/import": {
             "post": {
-                "description": "上传Excel文件(.xls/.xlsx)批量导入库存信息，文件大小限制10MB",
                 "consumes": [
                     "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
-                ],
-                "tags": [
-                    "Inventory"
                 ],
                 "summary": "批量导入库存",
                 "parameters": [
@@ -176,6 +172,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/inventory/{id}": {
+            "delete": {
+                "description": "删除指定库存(需管理员或库管员权限)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inventory"
+                ],
+                "summary": "删除库存",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "库存ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/materials": {
             "get": {
                 "description": "分页查询耗材基础信息，支持模糊搜索",
@@ -235,6 +263,38 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.Material"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/materials/{id}": {
+            "delete": {
+                "description": "删除指定耗材(需管理员或库管员权限)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Material"
+                ],
+                "summary": "删除耗材",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "耗材ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -395,7 +455,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "开放注册接口，默认角色为 User",
+                "description": "开放注册接口，默认角色为 普通用户",
                 "consumes": [
                     "application/json"
                 ],
@@ -495,6 +555,10 @@ const docTemplate = `{
                     "description": "真实姓名",
                     "type": "string"
                 },
+                "role": {
+                    "description": "角色: 管理员, 操作员, 普通用户",
+                    "type": "string"
+                },
                 "username": {
                     "description": "用户名",
                     "type": "string"
@@ -520,6 +584,10 @@ const docTemplate = `{
                     "description": "创建时间",
                     "type": "string"
                 },
+                "expiry_alert_days": {
+                    "description": "有效期预警天数",
+                    "type": "integer"
+                },
                 "id": {
                     "description": "主键ID",
                     "type": "integer"
@@ -527,6 +595,14 @@ const docTemplate = `{
                 "name": {
                     "description": "物料名称",
                     "type": "string"
+                },
+                "opened_expiry_days": {
+                    "description": "开封后有效期(天)",
+                    "type": "integer"
+                },
+                "safety_stock": {
+                    "description": "安全库存",
+                    "type": "integer"
                 },
                 "spec": {
                     "description": "规格型号",
@@ -578,6 +654,9 @@ const docTemplate = `{
                 "failed": {
                     "type": "integer"
                 },
+                "msg": {
+                    "type": "string"
+                },
                 "success": {
                     "type": "integer"
                 },
@@ -588,18 +667,26 @@ const docTemplate = `{
         },
         "services.InboundDTO": {
             "type": "object",
+            "required": [
+                "inboundNo"
+            ],
             "properties": {
                 "batchNo": {
                     "description": "内部批号",
                     "type": "string"
                 },
                 "brand": {
-                    "description": "品牌",
+                    "description": "厂家/品牌",
                     "type": "string"
                 },
                 "category": {
-                    "description": "分类",
+                    "description": "物料类型",
                     "type": "string"
+                },
+                "currentQuantity": {
+                    "description": "当前库存数量",
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "expiryDate": {
                     "description": "有效期 (YYYY-MM-DD)",
@@ -622,7 +709,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "quantity": {
-                    "description": "数量",
+                    "description": "数量 (初始入库数量)",
                     "type": "integer",
                     "format": "int64"
                 },

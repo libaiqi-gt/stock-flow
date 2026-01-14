@@ -36,6 +36,9 @@ definitions:
       real_name:
         description: 真实姓名
         type: string
+      role:
+        description: '角色: 管理员, 操作员, 普通用户'
+        type: string
       username:
         description: 用户名
         type: string
@@ -57,12 +60,21 @@ definitions:
       created_at:
         description: 创建时间
         type: string
+      expiry_alert_days:
+        description: 有效期预警天数
+        type: integer
       id:
         description: 主键ID
         type: integer
       name:
         description: 物料名称
         type: string
+      opened_expiry_days:
+        description: 开封后有效期(天)
+        type: integer
+      safety_stock:
+        description: 安全库存
+        type: integer
       spec:
         description: 规格型号
         type: string
@@ -109,6 +121,8 @@ definitions:
         type: array
       failed:
         type: integer
+      msg:
+        type: string
       success:
         type: integer
       total:
@@ -120,11 +134,15 @@ definitions:
         description: 内部批号
         type: string
       brand:
-        description: 品牌
+        description: 厂家/品牌
         type: string
       category:
-        description: 分类
+        description: 物料类型
         type: string
+      currentQuantity:
+        description: 当前库存数量
+        format: int64
+        type: integer
       expiryDate:
         description: 有效期 (YYYY-MM-DD)
         type: string
@@ -141,7 +159,7 @@ definitions:
         description: '模式: "append" 追加, "overwrite" 覆盖 (默认追加)'
         type: string
       quantity:
-        description: 数量
+        description: 数量 (初始入库数量)
         format: int64
         type: integer
       spec:
@@ -150,6 +168,8 @@ definitions:
       unit:
         description: 单位
         type: string
+    required:
+    - inboundNo
     type: object
 host: localhost:8080
 info:
@@ -196,11 +216,31 @@ paths:
       summary: 库存总表查询
       tags:
       - Inventory
+  /api/v1/inventory/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定库存(需管理员或库管员权限)
+      parameters:
+      - description: 库存ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 删除库存
+      tags:
+      - Inventory
   /api/v1/inventory/import:
     post:
       consumes:
       - multipart/form-data
-      description: 上传Excel文件(.xls/.xlsx)批量导入库存信息，文件大小限制10MB
       parameters:
       - description: Excel文件
         in: formData
@@ -220,8 +260,6 @@ paths:
                   $ref: '#/definitions/services.BatchImportResult'
               type: object
       summary: 批量导入库存
-      tags:
-      - Inventory
   /api/v1/inventory/inbound:
     post:
       consumes:
@@ -306,6 +344,27 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 创建耗材基础信息
+      tags:
+      - Material
+  /api/v1/materials/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定耗材(需管理员或库管员权限)
+      parameters:
+      - description: 耗材ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 删除耗材
       tags:
       - Material
   /api/v1/outbound/{id}/status:
@@ -408,7 +467,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 开放注册接口，默认角色为 User
+      description: 开放注册接口，默认角色为 普通用户
       parameters:
       - description: 注册参数
         in: body

@@ -39,6 +39,31 @@ func (ctrl *MaterialController) Create(c *gin.Context) {
 	response.Success[any](c, nil)
 }
 
+// Delete
+// @Summary 删除耗材
+// @Description 删除指定耗材(需管理员或库管员权限)
+// @Tags Material
+// @Accept json
+// @Produce json
+// @Param id path int true "耗材ID"
+// @Success 200 {object} response.Response "成功"
+// @Router /api/v1/materials/{id} [delete]
+func (ctrl *MaterialController) Delete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.Error(c, response.CodeBadRequest, "Invalid ID format")
+		return
+	}
+
+	if err := ctrl.materialService.DeleteMaterial(uint(id)); err != nil {
+		response.Error(c, response.CodeServerError, err.Error())
+		return
+	}
+
+	response.Success[any](c, nil)
+}
+
 // List
 // @Summary 查询耗材列表
 // @Description 分页查询耗材基础信息，支持模糊搜索

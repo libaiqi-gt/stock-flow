@@ -47,10 +47,33 @@ func (ctrl *InventoryController) Inbound(c *gin.Context) {
 	response.Success[any](c, nil)
 }
 
+// Delete
+// @Summary 删除库存
+// @Description 删除指定库存(需管理员或库管员权限)
+// @Tags Inventory
+// @Accept json
+// @Produce json
+// @Param id path int true "库存ID"
+// @Success 200 {object} response.Response "成功"
+// @Router /api/v1/inventory/{id} [delete]
+func (ctrl *InventoryController) Delete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.Error(c, response.CodeBadRequest, "Invalid ID format")
+		return
+	}
+
+	if err := ctrl.inventoryService.DeleteInventory(uint(id)); err != nil {
+		response.Error(c, response.CodeServerError, err.Error())
+		return
+	}
+
+	response.Success[any](c, nil)
+}
+
 // BatchImport
 // @Summary 批量导入库存
-// @Description 上传Excel文件(.xls/.xlsx)批量导入库存信息，文件大小限制10MB
-// @Tags Inventory
 // @Accept multipart/form-data
 // @Produce json
 // @Param file formData file true "Excel文件"

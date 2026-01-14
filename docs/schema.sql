@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS `wms_materials` (
   `spec` varchar(50) DEFAULT NULL COMMENT '规格',
   `unit` varchar(20) DEFAULT NULL COMMENT '单位',
   `brand` varchar(50) DEFAULT NULL COMMENT '品牌',
+  `safety_stock` bigint DEFAULT 0 COMMENT '安全库存',
+  `opened_expiry_days` int DEFAULT 180 COMMENT '开封后有效期(天)',
   `created_at` datetime(3) DEFAULT NULL COMMENT '创建时间',
   `updated_at` datetime(3) DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`),

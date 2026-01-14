@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/extrame/xls"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -28,12 +27,14 @@ type IInventoryDao interface {
 	List(page, pageSize int, materialName, code, batchNo string, status int) ([]models.Inventory, int64, error)
 	GetAvailableBatches(materialID uint) ([]models.Inventory, error)
 	GetByID(id uint) (*models.Inventory, error)
+	Delete(id uint) error
 }
 
 type IMaterialDao interface {
 	Create(m *models.Material) error
 	GetByCode(code string) (*models.Material, error)
 	List(page, pageSize int, name string) ([]models.Material, int64, error)
+	Delete(id uint) error
 }
 
 // NewInventoryService creates a new InventoryService
@@ -44,9 +45,21 @@ func NewInventoryService() *InventoryService {
 	}
 }
 
+// DeleteInventory 删除库存
+//
+// 参数:
+//
+//	id: 库存ID
+//
+// 返回值:
+//
+//	error: 删除错误
+func (s *InventoryService) DeleteInventory(id uint) error {
+	return s.inventoryDao.Delete(id)
+}
+
 // SetDao is used for testing to inject mock DAOs
 func (s *InventoryService) SetDao(invDao IInventoryDao, matDao IMaterialDao) {
-	s.inventoryDao = invDao
 	s.materialDao = matDao
 }
 
@@ -54,10 +67,10 @@ func (s *InventoryService) SetDao(invDao IInventoryDao, matDao IMaterialDao) {
 type InboundDTO struct {
 	MaterialCode    string // 物料编码
 	MaterialName    string // 物料名称
-	Category        string // 分类
+	Category        string // 物料类型
 	Spec            string // 规格
 	Unit            string // 单位
-	Brand           string // 品牌
+	Brand           string // 厂家/品牌
 	BatchNo         string // 内部批号
 	ExpiryDate      string // 有效期 (YYYY-MM-DD)
 	Quantity        int64  // 数量 (初始入库数量)
@@ -117,7 +130,8 @@ func (s *InventoryService) Inbound(dto InboundDTO) error {
 	var expiry time.Time
 	formats := []string{
 		"2006-01-02", "2006/01/02", "20060102",
-		"2006.01.02", "2006.01",
+		"2006.01.02", "2006.01", "2006.1.2",
+		"01-02-06", "01/02/06", // MM-DD-YY, MM/DD/YY
 	}
 	for _, f := range formats {
 		if t, e := time.Parse(f, dto.ExpiryDate); e == nil {
@@ -154,55 +168,40 @@ func (s *InventoryService) Inbound(dto InboundDTO) error {
 // 参数:
 //
 //	r: 文件读取器 (需支持 Seek)
-//	ext: 文件扩展名 (.xls / .xlsx)
+//	ext: 文件扩展名 (.xlsx / .xlsm / .xltx / .xltm)
 //
 // 返回值:
 //
 //	*BatchImportResult: 导入结果
 //	error: 严重错误
 func (s *InventoryService) BatchImport(r io.ReadSeeker, ext string) (*BatchImportResult, error) {
-	var rows [][]string
+	// 检查支持的扩展名
+	supportedExts := map[string]bool{
+		".xlsx": true,
+		".xlsm": true,
+		".xltx": true,
+		".xltm": true,
+	}
 
-	if ext == ".xlsx" {
-		f, err := excelize.OpenReader(r)
-		if err != nil {
-			return nil, fmt.Errorf("打开XLSX文件失败: %v", err)
-		}
-		defer f.Close()
-		rows, err = f.GetRows(f.GetSheetName(0))
-		if err != nil {
-			return nil, fmt.Errorf("读取XLSX内容失败: %v", err)
-		}
-	} else if ext == ".xls" {
-		f, err := xls.OpenReader(r, "utf-8")
-		if err != nil {
-			return nil, fmt.Errorf("打开XLS文件失败: %v", err)
-		}
-		if f.NumSheets() == 0 {
-			return nil, fmt.Errorf("XLS文件为空")
-		}
-		sheet := f.GetSheet(0)
-		if sheet.MaxRow == 0 {
-			return nil, fmt.Errorf("Sheet为空")
-		}
-		// Convert xls rows to [][]string
-		for i := 0; i <= int(sheet.MaxRow); i++ {
-			row := sheet.Row(i)
-			var rowData []string
-			if row != nil {
-				// xls row col index might not be continuous, check MaxCol?
-				// xls lib behavior: Row(i).Col(j)
-				// We need to know max col.
-				// Let's assume max 20 cols for safety or check LastCol()
-				lastCol := row.LastCol()
-				for j := 0; j < lastCol; j++ {
-					rowData = append(rowData, row.Col(j))
-				}
-			}
-			rows = append(rows, rowData)
-		}
-	} else {
+	if !supportedExts[ext] {
 		return nil, fmt.Errorf("不支持的文件格式: %s", ext)
+	}
+
+	f, err := excelize.OpenReader(r)
+	if err != nil {
+		return nil, fmt.Errorf("打开Excel文件失败: %v", err)
+	}
+	defer f.Close()
+
+	// 获取第一个工作表名称
+	sheetName := f.GetSheetName(0)
+	if sheetName == "" {
+		return nil, fmt.Errorf("工作簿为空")
+	}
+
+	rows, err := f.GetRows(sheetName)
+	if err != nil {
+		return nil, fmt.Errorf("读取工作表内容失败: %v", err)
 	}
 
 	result := &BatchImportResult{
@@ -294,10 +293,10 @@ func (s *InventoryService) parseExcelRow(row []string, headerMap map[string]int,
 	dto := &InboundDTO{
 		MaterialCode:    code,
 		MaterialName:    name,
-		Category:        getVal("分类"),
+		Category:        getVal("物料类型"),
 		Spec:            getVal("规格"),
 		Unit:            getVal("单位"),
-		Brand:           getVal("品牌"),
+		Brand:           getVal("厂家/品牌"),
 		BatchNo:         batch,
 		ExpiryDate:      expiryStr,
 		Quantity:        qty,
