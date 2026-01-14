@@ -67,6 +67,26 @@ definitions:
     - password
     - username
     type: object
+  dao.MonthlyOutbound:
+    properties:
+      month:
+        type: string
+      total_qty:
+        type: integer
+    type: object
+  dao.WarningBatch:
+    properties:
+      batch_no:
+        type: string
+      expiry_alert_days:
+        type: integer
+      expiry_date:
+        type: string
+      id:
+        type: integer
+      material_name:
+        type: string
+    type: object
   models.Material:
     properties:
       brand:
@@ -149,6 +169,19 @@ definitions:
       total:
         type: integer
     type: object
+  services.DashboardStats:
+    properties:
+      expired_batches:
+        type: integer
+      outbound_trend:
+        items:
+          $ref: '#/definitions/dao.MonthlyOutbound'
+        type: array
+      total_batches:
+        type: integer
+      warning_batches:
+        $ref: '#/definitions/services.WarningBatchesStats'
+    type: object
   services.InboundDTO:
     properties:
       batchNo:
@@ -191,6 +224,15 @@ definitions:
         type: string
     required:
     - inboundNo
+    type: object
+  services.WarningBatchesStats:
+    properties:
+      count:
+        type: integer
+      list:
+        items:
+          $ref: '#/definitions/dao.WarningBatch'
+        type: array
     type: object
 host: localhost:8080
 info:
@@ -524,6 +566,26 @@ paths:
       summary: 我的领用记录
       tags:
       - Outbound
+  /api/v1/statistics/dashboard:
+    get:
+      consumes:
+      - application/json
+      description: 包含库存总批次、临期预警、过期库存及近半年出库趋势
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 统计数据
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/services.DashboardStats'
+              type: object
+      summary: 获取仪表盘综合统计数据
+      tags:
+      - Statistics
   /auth/login:
     post:
       consumes:

@@ -12,7 +12,7 @@ type Material struct {
 	Spec             string    `gorm:"type:varchar(50)" json:"spec"`                      // 规格型号
 	Unit             string    `gorm:"type:varchar(20)" json:"unit"`                      // 计量单位
 	Brand            string    `gorm:"type:varchar(50)" json:"brand"`                     // 厂家/品牌
-	SafetyStock      int64     `gorm:"type:bigint;default:0" json:"safety_stock"`         // 安全库存
+	SafetyStock      int64     `gorm:"type:bigint;default:10" json:"safety_stock"`        // 安全库存
 	OpenedExpiryDays int       `gorm:"type:int;default:180" json:"opened_expiry_days"`    // 开封后有效期(天)
 	ExpiryAlertDays  int       `gorm:"type:int;default:60" json:"expiry_alert_days"`      // 有效期预警天数
 	CreatedAt        time.Time `json:"created_at"`                                        // 创建时间

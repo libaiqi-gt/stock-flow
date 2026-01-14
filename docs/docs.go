@@ -513,6 +513,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/statistics/dashboard": {
+            "get": {
+                "description": "包含库存总批次、临期预警、过期库存及近半年出库趋势",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "获取仪表盘综合统计数据",
+                "responses": {
+                    "200": {
+                        "description": "统计数据",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/services.DashboardStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "用户通过账号密码登录，获取 JWT Token",
@@ -700,6 +735,37 @@ const docTemplate = `{
                 }
             }
         },
+        "dao.MonthlyOutbound": {
+            "type": "object",
+            "properties": {
+                "month": {
+                    "type": "string"
+                },
+                "total_qty": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dao.WarningBatch": {
+            "type": "object",
+            "properties": {
+                "batch_no": {
+                    "type": "string"
+                },
+                "expiry_alert_days": {
+                    "type": "integer"
+                },
+                "expiry_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "material_name": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Material": {
             "type": "object",
             "properties": {
@@ -800,6 +866,26 @@ const docTemplate = `{
                 }
             }
         },
+        "services.DashboardStats": {
+            "type": "object",
+            "properties": {
+                "expired_batches": {
+                    "type": "integer"
+                },
+                "outbound_trend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.MonthlyOutbound"
+                    }
+                },
+                "total_batches": {
+                    "type": "integer"
+                },
+                "warning_batches": {
+                    "$ref": "#/definitions/services.WarningBatchesStats"
+                }
+            }
+        },
         "services.InboundDTO": {
             "type": "object",
             "required": [
@@ -855,6 +941,20 @@ const docTemplate = `{
                 "unit": {
                     "description": "单位",
                     "type": "string"
+                }
+            }
+        },
+        "services.WarningBatchesStats": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.WarningBatch"
+                    }
                 }
             }
         }

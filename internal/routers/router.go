@@ -22,6 +22,7 @@ func InitRouter() *gin.Engine {
 	matCtrl := new(controllers.MaterialController)
 	invCtrl := controllers.NewInventoryController()
 	outCtrl := new(controllers.OutboundController)
+	statsCtrl := new(controllers.StatisticsController)
 
 	// Public
 	auth := r.Group("/auth")
@@ -71,6 +72,13 @@ func InitRouter() *gin.Engine {
 
 			// All Records (All Users)
 			out.GET("/all", outCtrl.ListAll)
+		}
+
+		// Statistics (Admin/Keeper)
+		stats := api.Group("/statistics")
+		stats.Use(middleware.RoleAuth("Admin", "Keeper"))
+		{
+			stats.GET("/dashboard", statsCtrl.GetDashboardStats)
 		}
 	}
 
