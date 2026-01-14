@@ -146,7 +146,7 @@ func (s *OutboundService) GetAuditList(page, pageSize int, approvalStatus string
 	return s.outboundDao.List(page, pageSize, 0, approvalStatus)
 }
 
-// GetAllOutboundList 获取所有领用记录列表(无权限过滤)
+// GetAllOutboundList 获取所有已审批通过的领用记录列表(无权限过滤)
 //
 // 参数:
 //   page, pageSize: 分页
@@ -155,8 +155,8 @@ func (s *OutboundService) GetAuditList(page, pageSize int, approvalStatus string
 //   int64: 总数
 //   error: 错误
 func (s *OutboundService) GetAllOutboundList(page, pageSize int) ([]models.Outbound, int64, error) {
-	// userID=0, approvalStatus="" 表示查询所有
-	return s.outboundDao.List(page, pageSize, 0, "")
+	// userID=0, approvalStatus="APPROVED" 表示查询所有已通过审批的记录
+	return s.outboundDao.List(page, pageSize, 0, "APPROVED")
 }
 
 // UpdateStatus 更新领用状态
