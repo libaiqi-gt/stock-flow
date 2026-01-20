@@ -15,7 +15,7 @@ services:
   # 服务2: Go 后端
   backend:
     # 注意：这里要填你的 Docker Hub 用户名
-    image: ${{ secrets.DOCKERHUB_USERNAME }}/go-backend:latest
+    image: crpi-3dw8a74xwr0aba1i.cn-guangzhou.personal.cr.aliyuncs.com/bq-project-space/stock-flow:latest
     restart: always
     container_name: app_backend
     ports:

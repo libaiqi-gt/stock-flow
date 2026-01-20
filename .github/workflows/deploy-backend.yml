@@ -16,21 +16,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # 2. 登录 Docker Hub
-      - name: Login to Docker Hub
+      # 2. 登录 阿里云ACR
+      - name: Login to Aliyun ACR
         uses: docker/login-action@v2
         with:
+          registry: ${{ secrets.ALIYUN_REGISTRY }} # 指定阿里云地址
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3. 构建并推送 Go 镜像
       - name: Build and Push Backend
         uses: docker/build-push-action@v4
         with:
           context: ./
           push: true
-          # 注意：这里的镜像名要和 docker-compose.yml 里写的一致
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/go-backend:latest
+          # 格式：registry地址/命名空间/镜像名:版本
+          tags: ${{ secrets.ALIYUN_REGISTRY }}/bq-project-space/stock-flow:latest
 
       # 4. 部署到阿里云
       - name: Deploy to Aliyun
@@ -71,7 +71,7 @@ jobs:
                 networks:
                   - app_network
               backend:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/go-backend:latest
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/stock-flow:latest
                 restart: always
                 container_name: app_backend
                 ports:
