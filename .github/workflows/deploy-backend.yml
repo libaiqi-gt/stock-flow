@@ -33,45 +33,41 @@ jobs:
           tags: ${{ secrets.ALIYUN_REGISTRY }}/bq-project-space/stock-flow:latest
 
       # 4. 部署到阿里云
-      - name: Deploy to Aliyun
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # 创建项目文件夹
             mkdir -p /data/my-project
             cd /data/my-project
 
-            # 停止旧服务
+            # 停止容器
             docker compose down
 
-            # 删除旧镜像 (清理空间)
-            docker image prune -f
-
-            # 拉取新镜像 (因为 docker-compose.yml 还没上传，我们需要先手动传一次，或者用下面的 trick)
-            # 简单起见，我们这里直接用 docker run 测试，或者你需要先把 docker-compose.yml 传上去
-            
-            # --- 关键修正 ---
-            # 为了让这一步生效，我们需要把仓库里的 docker-compose.yml 内容写到服务器上
-            # 下面这行命令会把当前的 docker-compose.yml 覆盖写入服务器
+            # --- 这里是关键修改点 ---
+            # 重新写入 docker-compose.yml，必须确保这里的 image 地址是阿里云的
             cat <<EOF > docker-compose.yml
-            version: '3.8'
             services:
               db:
                 image: mysql:5.7
                 restart: always
                 container_name: app_db
                 environment:
-                  MYSQL_ROOT_PASSWORD: stock_flow_db123456 # 建议改成实际密码
-                  MYSQL_DATABASE: stock_flow
+                  MYSQL_ROOT_PASSWORD: stock_flow_db123456 # 记得在 Secrets 里配，或者这里先写死
+                  MYSQL_DATABASE: stock-flow
                 volumes:
                   - ./mysql_data:/var/lib/mysql
                 networks:
                   - app_network
+                  
               backend:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/stock-flow:latest
+                # ⬇️⬇️⬇️ 重点看这里！必须改成阿里云的完整地址 ⬇️⬇️⬇️
+                # 格式：registry.cn-hangzhou.aliyuncs.com/命名空间/仓库名:latest
+                image: ${{ secrets.ALIYUN_REGISTRY }}/bq-project-space/stock-flow:latest
+                # ⬆️⬆️⬆️ 确认这里不再是 DOCKERHUB_USERNAME
+                
                 restart: always
                 container_name: app_backend
                 ports:
@@ -80,13 +76,22 @@ jobs:
                   - db
                 environment:
                   DB_HOST: db
+                  DB_PORT: 3306
+                  DB_USER: root
+                  DB_PASSWORD: stock_flow_db123456
+                  DB_NAME: stock_flow
                 networks:
                   - app_network
             networks:
               app_network:
                 driver: bridge
             EOF
+            # --- 修改结束 ---
 
-            # 启动服务
+            # 登录阿里云 ACR (防止服务器没权限拉取)
+            # 注意：这里需要把你的密码 echo 进去，或者在服务器手动登录一次
+            # 最简单的办法是：在服务器上手动执行一次 `docker login registry.cn-hangzhou.aliyuncs.com`
+            # 这样凭证会保存在服务器上，以后 Actions 就不需要这两行了。
+            
             docker compose pull
             docker compose up -d
