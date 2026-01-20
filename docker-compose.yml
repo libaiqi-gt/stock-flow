@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # 服务1: MySQL 数据库
+  db:
+    image: mysql:5.7  # 推荐 5.7，8.0 太吃内存
+    restart: always
+    container_name: app_db
+    environment:
+      MYSQL_ROOT_PASSWORD: stock_flow_db123456  # 【修改这里】设置你的数据库密码
+      MYSQL_DATABASE: stock_flow              # 【修改这里】你的库名
+    volumes:
+      - ./mysql_data:/var/lib/mysql            # 数据持久化，防止重启丢数据
+    networks:
+      - app_network
+
+  # 服务2: Go 后端
+  backend:
+    # 注意：这里要填你的 Docker Hub 用户名
+    image: ${{ secrets.DOCKERHUB_USERNAME }}/go-backend:latest
+    restart: always
+    container_name: app_backend
+    ports:
+      - "8080:8080"  # 宿主机端口:容器端口
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: stock_flow_db123456
+      DB_NAME: stock_flow
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

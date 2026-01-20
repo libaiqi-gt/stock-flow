@@ -1,0 +1,92 @@
+name: Deploy Backend
+
+on:
+  push:
+    paths:
+      - '/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy-backend.yml'
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 拉取代码
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # 2. 登录 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 3. 构建并推送 Go 镜像
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          # 注意：这里的镜像名要和 docker-compose.yml 里写的一致
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/go-backend:latest
+
+      # 4. 部署到阿里云
+      - name: Deploy to Aliyun
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # 创建项目文件夹
+            mkdir -p /data/my-project
+            cd /data/my-project
+
+            # 停止旧服务
+            docker compose down
+
+            # 删除旧镜像 (清理空间)
+            docker image prune -f
+
+            # 拉取新镜像 (因为 docker-compose.yml 还没上传，我们需要先手动传一次，或者用下面的 trick)
+            # 简单起见，我们这里直接用 docker run 测试，或者你需要先把 docker-compose.yml 传上去
+            
+            # --- 关键修正 ---
+            # 为了让这一步生效，我们需要把仓库里的 docker-compose.yml 内容写到服务器上
+            # 下面这行命令会把当前的 docker-compose.yml 覆盖写入服务器
+            cat <<EOF > docker-compose.yml
+            version: '3.8'
+            services:
+              db:
+                image: mysql:5.7
+                restart: always
+                container_name: app_db
+                environment:
+                  MYSQL_ROOT_PASSWORD: stock_flow_db123456 # 建议改成实际密码
+                  MYSQL_DATABASE: stock_flow
+                volumes:
+                  - ./mysql_data:/var/lib/mysql
+                networks:
+                  - app_network
+              backend:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/go-backend:latest
+                restart: always
+                container_name: app_backend
+                ports:
+                  - "8080:8080"
+                depends_on:
+                  - db
+                environment:
+                  DB_HOST: db
+                networks:
+                  - app_network
+            networks:
+              app_network:
+                driver: bridge
+            EOF
+
+            # 启动服务
+            docker compose pull
+            docker compose up -d
