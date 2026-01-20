@@ -27,7 +27,7 @@ jobs:
       - name: Build and Push Backend
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
+          context: ./
           push: true
           # 注意：这里的镜像名要和 docker-compose.yml 里写的一致
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/go-backend:latest
