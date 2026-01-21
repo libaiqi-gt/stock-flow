@@ -21,7 +21,7 @@ WORKDIR /root/
 # 从构建阶段把二进制文件拷过来
 COPY --from=builder /app/main .
 # 如果你有配置文件(config.yaml)，记得取消下面这行的注释
-# COPY --from=builder /app/config.yaml .
+COPY --from=builder /app/config.yaml .
 
 EXPOSE 8080
 CMD ["./main"]
