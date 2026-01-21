@@ -2,10 +2,6 @@ name: Deploy Backend
 
 on:
   push:
-    paths:
-      - '*.go'
-      - 'docker-compose.yml'
-      - '.github/workflows/deploy-backend.yml'
     branches: [ "main" ]
 
 jobs:
