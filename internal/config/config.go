@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/spf13/viper"
 )
 
@@ -46,6 +47,14 @@ func InitConfig() error {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("configs")
 	viper.AddConfigPath(".")
+
+	// 绑定环境变量 (适配 docker-compose 和 k8s 部署)
+	viper.AutomaticEnv()
+	_ = viper.BindEnv("database.host", "DB_HOST")
+	_ = viper.BindEnv("database.port", "DB_PORT")
+	_ = viper.BindEnv("database.user", "DB_USER")
+	_ = viper.BindEnv("database.password", "DB_PASSWORD")
+	_ = viper.BindEnv("database.name", "DB_NAME")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
