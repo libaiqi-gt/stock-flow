@@ -1,4 +1,18 @@
 services:
+  # 服务3: Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    restart: always
+    container_name: app_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
   # 服务1: MySQL 数据库
   db:
     image: mysql:5.7  # 推荐 5.7，8.0 太吃内存
