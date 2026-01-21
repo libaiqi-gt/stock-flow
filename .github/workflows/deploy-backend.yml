@@ -27,7 +27,7 @@ jobs:
       - name: Build and Push Backend
         uses: docker/build-push-action@v4
         with:
-          context: ./
+          context: .
           push: true
           # 格式：registry地址/命名空间/镜像名:版本
           tags: ${{ secrets.ALIYUN_REGISTRY }}/bq-project-space/stock-flow:latest
