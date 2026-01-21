@@ -49,7 +49,7 @@ func (ctrl *InventoryController) Inbound(c *gin.Context) {
 
 // Delete
 // @Summary 删除库存
-// @Description 删除指定库存(需管理员或库管员权限)
+// @Description 删除指定库存(软删除，需管理员或库管员权限)
 // @Tags Inventory
 // @Accept json
 // @Produce json

@@ -13,6 +13,8 @@ type Inventory struct {
 	InitialQty int64     `gorm:"not null" json:"initial_qty"`                  // 初始入库数量
 	CurrentQty int64     `gorm:"not null" json:"current_qty"`                  // 当前剩余数量(动态变化)
 	ExpiryDate time.Time `gorm:"type:date;index" json:"expiry_date"`           // 有效期(用于效期预警)
+	IsDeleted  bool      `gorm:"default:false;index" json:"is_deleted"`        // 软删除标记
+	DeletedAt  *time.Time `json:"deleted_at"`                                  // 删除时间
 	CreatedAt  time.Time `json:"created_at"`                                   // 创建时间
 	UpdatedAt  time.Time `json:"updated_at"`                                   // 更新时间
 }

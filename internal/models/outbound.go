@@ -23,6 +23,8 @@ type Outbound struct {
 	Remarks         string    `gorm:"type:varchar(500)" json:"remarks"`                  // 备注说明
 	SnapExpiryDate  time.Time `gorm:"type:date" json:"snap_expiry_date"`                 // 快照有效期(冗余存储，防源数据变更)
 	ApplyDate      time.Time `json:"apply_date"`                                        // 申请时间
+	IsDeleted      bool      `gorm:"default:false;index" json:"is_deleted"`             // 软删除标记
+	DeletedAt      *time.Time `json:"deleted_at"`                                       // 删除时间
 	CreatedAt      time.Time `json:"created_at"`                                        // 创建时间
 	UpdatedAt      time.Time `json:"updated_at"`                                        // 更新时间
 }

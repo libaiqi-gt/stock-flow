@@ -2,6 +2,7 @@ package dao
 
 import (
 	"stock-flow/internal/models"
+	"time"
 )
 
 // MaterialDao 耗材数据访问对象
@@ -21,7 +22,7 @@ func (d *MaterialDao) Create(m *models.Material) error {
 	return DB.Create(m).Error
 }
 
-// Delete 删除耗材
+// Delete 删除耗材 (软删除)
 //
 // 参数:
 //
@@ -31,7 +32,13 @@ func (d *MaterialDao) Create(m *models.Material) error {
 //
 //	error: 错误信息
 func (d *MaterialDao) Delete(id uint) error {
-	return DB.Delete(&models.Material{}, id).Error
+	// 软删除: 更新 is_deleted = true, deleted_at = now
+	return DB.Model(&models.Material{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error
 }
 
 // GetByCode 根据编码查询耗材
@@ -46,7 +53,7 @@ func (d *MaterialDao) Delete(id uint) error {
 //	error: 错误信息
 func (d *MaterialDao) GetByCode(code string) (*models.Material, error) {
 	var m models.Material
-	err := DB.Where("code = ?", code).First(&m).Error
+	err := DB.Where("is_deleted = ? AND code = ?", false, code).First(&m).Error
 	return &m, err
 }
 
@@ -67,7 +74,7 @@ func (d *MaterialDao) List(page, pageSize int, name string) ([]models.Material, 
 	var materials []models.Material
 	var total int64
 
-	db := DB.Model(&models.Material{})
+	db := DB.Model(&models.Material{}).Where("is_deleted = ?", false)
 	if name != "" {
 		db = db.Where("name LIKE ?", "%"+name+"%")
 	}

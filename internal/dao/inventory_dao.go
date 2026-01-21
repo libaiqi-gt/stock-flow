@@ -3,6 +3,8 @@ package dao
 import (
 	"stock-flow/internal/models"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // InventoryDao 库存数据访问对象
@@ -22,7 +24,7 @@ func (d *InventoryDao) Create(inv *models.Inventory) error {
 	return DB.Create(inv).Error
 }
 
-// Delete 删除库存
+// Delete 删除库存 (软删除)
 //
 // 参数:
 //
@@ -32,7 +34,38 @@ func (d *InventoryDao) Create(inv *models.Inventory) error {
 //
 //	error: 错误信息
 func (d *InventoryDao) Delete(id uint) error {
-	return DB.Delete(&models.Inventory{}, id).Error
+	// 开启事务
+	return DB.Transaction(func(tx *gorm.DB) error {
+		// 1. 查询关联的待审批申请
+		var pendingOutbounds []models.Outbound
+		if err := tx.Where("inventory_id = ? AND approval_status = ? AND is_deleted = ?", id, "PENDING", false).Find(&pendingOutbounds).Error; err != nil {
+			return err
+		}
+
+		// 2. 如果存在待审批申请，先删除它们
+		if len(pendingOutbounds) > 0 {
+			if err := tx.Model(&models.Outbound{}).
+				Where("inventory_id = ? AND approval_status = ? AND is_deleted = ?", id, "PENDING", false).
+				Updates(map[string]interface{}{
+					"is_deleted": true,
+					"deleted_at": time.Now(),
+				}).Error; err != nil {
+				return err
+			}
+		}
+
+		// 3. 删除库存 (软删除)
+		if err := tx.Model(&models.Inventory{}).
+			Where("id = ?", id).
+			Updates(map[string]interface{}{
+				"is_deleted": true,
+				"deleted_at": time.Now(),
+			}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 // GetByMaterialAndBatch 根据物料ID和批号查询库存
@@ -48,7 +81,7 @@ func (d *InventoryDao) Delete(id uint) error {
 //	error: 错误信息
 func (d *InventoryDao) GetByMaterialAndBatch(materialID uint, batchNo string) (*models.Inventory, error) {
 	var inv models.Inventory
-	err := DB.Where("material_id = ? AND batch_no = ?", materialID, batchNo).First(&inv).Error
+	err := DB.Where("is_deleted = ? AND material_id = ? AND batch_no = ?", false, materialID, batchNo).First(&inv).Error
 	return &inv, err
 }
 
@@ -64,7 +97,7 @@ func (d *InventoryDao) GetByMaterialAndBatch(materialID uint, batchNo string) (*
 //	error: 错误信息
 func (d *InventoryDao) GetByInboundNo(inboundNo string) (*models.Inventory, error) {
 	var inv models.Inventory
-	err := DB.Where("inbound_no = ?", inboundNo).First(&inv).Error
+	err := DB.Where("is_deleted = ? AND inbound_no = ?", false, inboundNo).First(&inv).Error
 	return &inv, err
 }
 
@@ -101,7 +134,8 @@ func (d *InventoryDao) List(page, pageSize int, materialName, code, batchNo stri
 	var list []models.Inventory
 	var total int64
 
-	db := DB.Model(&models.Inventory{}).Preload("Material")
+	// Explicitly specify table alias for is_deleted to avoid ambiguity when joining
+	db := DB.Model(&models.Inventory{}).Where("wms_inventory.is_deleted = ?", false).Preload("Material")
 
 	if materialName != "" {
 		db = db.Joins("JOIN wms_materials ON wms_materials.id = wms_inventory.material_id").
@@ -153,7 +187,7 @@ func (d *InventoryDao) List(page, pageSize int, materialName, code, batchNo stri
 func (d *InventoryDao) GetAvailableBatches(materialID uint) ([]models.Inventory, error) {
 	var list []models.Inventory
 	// FEFO: Order by ExpiryDate ASC
-	err := DB.Where("material_id = ? AND current_qty > 0", materialID).
+	err := DB.Where("is_deleted = ? AND material_id = ? AND current_qty > 0", false, materialID).
 		Order("expiry_date ASC").
 		Find(&list).Error
 	return list, err
@@ -171,6 +205,6 @@ func (d *InventoryDao) GetAvailableBatches(materialID uint) ([]models.Inventory,
 //	error: 错误信息
 func (d *InventoryDao) GetByID(id uint) (*models.Inventory, error) {
 	var inv models.Inventory
-	err := DB.Preload("Material").First(&inv, id).Error
+	err := DB.Preload("Material").Where("is_deleted = ?", false).First(&inv, id).Error
 	return &inv, err
 }

@@ -33,7 +33,7 @@ func (d *OutboundDao) List(page, pageSize int, userID uint, approvalStatus strin
 	var list []models.Outbound
 	var total int64
 
-	db := DB.Model(&models.Outbound{}).Preload("Inventory.Material").Preload("User").Preload("Approver")
+	db := DB.Model(&models.Outbound{}).Where("is_deleted = ?", false).Preload("Inventory.Material").Preload("User").Preload("Approver")
 	
 	if userID > 0 {
 		db = db.Where("user_id = ?", userID)

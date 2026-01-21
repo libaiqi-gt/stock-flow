@@ -41,7 +41,7 @@ func (ctrl *MaterialController) Create(c *gin.Context) {
 
 // Delete
 // @Summary 删除耗材
-// @Description 删除指定耗材(需管理员或库管员权限)
+// @Description 删除指定耗材(软删除，需管理员或库管员权限)
 // @Tags Material
 // @Accept json
 // @Produce json

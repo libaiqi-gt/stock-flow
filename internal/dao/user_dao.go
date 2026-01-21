@@ -27,7 +27,7 @@ func (d *UserDao) Create(user *models.User) error {
 //   error: 查询失败返回错误
 func (d *UserDao) GetByUsername(username string) (*models.User, error) {
 	var user models.User
-	err := DB.Where("username = ?", username).First(&user).Error
+	err := DB.Where("is_deleted = ? AND username = ?", false, username).First(&user).Error
 	return &user, err
 }
 
@@ -40,6 +40,6 @@ func (d *UserDao) GetByUsername(username string) (*models.User, error) {
 //   error: 查询失败返回错误
 func (d *UserDao) GetByID(id uint) (*models.User, error) {
 	var user models.User
-	err := DB.First(&user, id).Error
+	err := DB.Where("is_deleted = ?", false).First(&user, id).Error
 	return &user, err
 }

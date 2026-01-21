@@ -13,6 +13,8 @@ type User struct {
 	RealName     string    `gorm:"type:varchar(50)" json:"real_name"`       // 真实姓名
 	Role         string    `gorm:"type:varchar(20);not null" json:"role"`   // 角色: Admin, Keeper, User
 	Status       int       `gorm:"type:tinyint;default:1" json:"status"`    // 状态: 1正常, 0禁用
+	IsDeleted    bool      `gorm:"default:false;index" json:"is_deleted"`   // 软删除标记
+	DeletedAt    *time.Time `json:"deleted_at"`                             // 删除时间
 	CreatedAt    time.Time `json:"created_at"`                              // 创建时间
 	UpdatedAt    time.Time `json:"updated_at"`                              // 更新时间
 }

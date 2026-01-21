@@ -54,7 +54,7 @@ jobs:
                 restart: always
                 container_name: app_db
                 environment:
-                  MYSQL_ROOT_PASSWORD: stock_flow_db123456 # 记得在 Secrets 里配，或者这里先写死
+                  MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD }} # 记得在 Secrets 里配，或者这里先写死
                   MYSQL_DATABASE: stock-flow
                 volumes:
                   - ./mysql_data:/var/lib/mysql
