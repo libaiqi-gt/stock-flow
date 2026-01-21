@@ -26,7 +26,7 @@ func InitDB() {
 	if host == "" {
 		host = c.Host
 	}
-
+	fmt.Println("DB_HOST:", host)
 	portStr := os.Getenv("DB_PORT")
 	port := c.Port
 	if portStr != "" {
