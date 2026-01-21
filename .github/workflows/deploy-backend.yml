@@ -40,6 +40,9 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # 1. 显式登录阿里云 ACR (防止权限过期)
+            # 这里的 secrets 必须和你 GitHub 仓库里配的一样
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin ${{ secrets.ALIYUN_REGISTRY }}
             mkdir -p /data/my-project
             cd /data/my-project
 
