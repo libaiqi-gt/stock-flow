@@ -50,6 +50,11 @@ func InitDB() {
 		name = c.Name
 	}
 
+	// ---------------------------------------------------------
+	// 自动创建数据库 (Fix: Error 1049 Unknown database)
+	// ---------------------------------------------------------
+	createDatabase(user, password, host, port, name)
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		user, password, host, port, name)
 
@@ -83,4 +88,33 @@ func InitDB() {
 	sqlDB.SetConnMaxLifetime(time.Hour) // 连接最大存活时间
 
 	log.Println("Database connection established successfully")
+}
+
+// createDatabase 尝试连接 MySQL 并创建数据库（如果不存在）
+func createDatabase(user, password, host string, port int, dbName string) {
+	// 连接 DSN 不包含数据库名
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4", user, password, host, port)
+
+	// 使用标准库 sql 或者 gorm 打开连接
+	// 这里为了简单直接复用 gorm，虽然有点重，但兼容性好
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Printf("[Warning] Failed to connect to MySQL server to check database existence: %v. Proceeding to connect to DB directly...", err)
+		return
+	}
+
+	// 获取通用数据库对象以关闭连接
+	sqlDB, err := db.DB()
+	if err != nil {
+		return
+	}
+	defer sqlDB.Close()
+
+	// 创建数据库 SQL
+	createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;", dbName)
+	if err := db.Exec(createSQL).Error; err != nil {
+		log.Printf("[Warning] Failed to create database '%s': %v", dbName, err)
+	} else {
+		log.Printf("[Info] Database '%s' checked/created successfully.", dbName)
+	}
 }
