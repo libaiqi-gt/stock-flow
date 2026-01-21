@@ -39,14 +39,14 @@ jobs:
             # 1. 显式登录阿里云 ACR (防止权限过期)
             # 这里的 secrets 必须和你 GitHub 仓库里配的一样
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin ${{ secrets.ALIYUN_REGISTRY }}
-            mkdir -p /data/my-project
-            cd /data/my-project
+            # 2. 这里的目录要和前端分开！
+            mkdir -p /data/backend
+            cd /data/backend
 
             # 停止容器
             docker compose down
 
-            # --- 这里是关键修改点 ---
-            # 重新写入 docker-compose.yml，必须确保这里的 image 地址是阿里云的
+            # 3. 写入后端专属配置
             cat <<EOF > docker-compose.yml
             services:
               db:
@@ -68,13 +68,13 @@ jobs:
                 # ⬆️⬆️⬆️ 确认这里不再是 DOCKERHUB_USERNAME
                 
                 restart: always
-                container_name: app_backend
+                container_name: app_backend # ⚠️ 固定名字！前端Nginx要找这个名字
                 ports:
                   - "8080:8080"
                 depends_on:
                   - db
                 environment:
-                  DB_HOST: db
+                  DB_HOST: app_db
                   DB_PORT: 3306
                   DB_USER: root
                   DB_PASSWORD: stock_flow_db123456
@@ -83,7 +83,8 @@ jobs:
                   - app_network
             networks:
               app_network:
-                driver: bridge
+                external: true
+                name: my_shared_network
             EOF
             # --- 修改结束 ---
 
