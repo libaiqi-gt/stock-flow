@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"path/filepath"
 	"stock-flow/internal/models"
 	"stock-flow/internal/pkg/response"
 	"stock-flow/internal/services"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +15,53 @@ import (
 // 处理耗材信息的创建与查询
 type MaterialController struct {
 	materialService services.MaterialService
+}
+
+// BatchImport
+// @Summary 批量导入耗材
+// @Description 上传Excel文件批量导入耗材基础信息(需管理员权限)
+// @Tags Material
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Excel文件"
+// @Success 200 {object} response.Response{data=services.BatchImportResult} "导入结果"
+// @Router /api/v1/materials/import [post]
+func (ctrl *MaterialController) BatchImport(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.Error(c, response.CodeBadRequest, "请上传文件")
+		return
+	}
+
+	// 1. Check file size (10MB limit)
+	if file.Size > 10*1024*1024 {
+		response.Error(c, response.CodeBadRequest, "文件大小不能超过10MB")
+		return
+	}
+
+	// 2. Check extension
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if ext != ".xlsx" && ext != ".xls" {
+		response.Error(c, response.CodeBadRequest, "仅支持 .xlsx 或 .xls 格式")
+		return
+	}
+
+	// 3. Open file
+	f, err := file.Open()
+	if err != nil {
+		response.Error(c, response.CodeServerError, "文件读取失败")
+		return
+	}
+	defer f.Close()
+
+	// 4. Process import
+	result, err := ctrl.materialService.BatchImport(f, ext)
+	if err != nil {
+		response.Error(c, response.CodeServerError, err.Error())
+		return
+	}
+
+	response.Success(c, result)
 }
 
 // Create

@@ -101,12 +101,18 @@ definitions:
       created_at:
         description: 创建时间
         type: string
+      deleted_at:
+        description: 删除时间
+        type: string
       expiry_alert_days:
         description: 有效期预警天数
         type: integer
       id:
         description: 主键ID
         type: integer
+      is_deleted:
+        description: 软删除标记
+        type: boolean
       name:
         description: 物料名称
         type: string
@@ -283,7 +289,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: 删除指定库存(需管理员或库管员权限)
+      description: 删除指定库存(软删除，需管理员或库管员权限)
       parameters:
       - description: 库存ID
         in: path
@@ -413,7 +419,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: 删除指定耗材(需管理员或库管员权限)
+      description: 删除指定耗材(软删除，需管理员或库管员权限)
       parameters:
       - description: 耗材ID
         in: path
@@ -428,6 +434,32 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 删除耗材
+      tags:
+      - Material
+  /api/v1/materials/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传Excel文件批量导入耗材基础信息(需管理员权限)
+      parameters:
+      - description: Excel文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 导入结果
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/services.BatchImportResult'
+              type: object
+      summary: 批量导入耗材
       tags:
       - Material
   /api/v1/outbound/{id}/status:

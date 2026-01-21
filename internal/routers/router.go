@@ -40,6 +40,7 @@ func InitRouter() *gin.Engine {
 		mat.Use(middleware.RoleAuth("Admin", "Keeper"))
 		{
 			mat.POST("", matCtrl.Create)
+			mat.POST("/import", matCtrl.BatchImport) // Add import route
 			mat.GET("", matCtrl.List)
 			mat.DELETE("/:id", matCtrl.Delete)
 		}

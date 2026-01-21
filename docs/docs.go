@@ -174,7 +174,7 @@ const docTemplate = `{
         },
         "/api/v1/inventory/{id}": {
             "delete": {
-                "description": "删除指定库存(需管理员或库管员权限)",
+                "description": "删除指定库存(软删除，需管理员或库管员权限)",
                 "consumes": [
                     "application/json"
                 ],
@@ -275,9 +275,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/materials/import": {
+            "post": {
+                "description": "上传Excel文件批量导入耗材基础信息(需管理员权限)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Material"
+                ],
+                "summary": "批量导入耗材",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Excel文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "导入结果",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/services.BatchImportResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/materials/{id}": {
             "delete": {
-                "description": "删除指定耗材(需管理员或库管员权限)",
+                "description": "删除指定耗材(软删除，需管理员或库管员权限)",
                 "consumes": [
                     "application/json"
                 ],
@@ -785,6 +829,10 @@ const docTemplate = `{
                     "description": "创建时间",
                     "type": "string"
                 },
+                "deleted_at": {
+                    "description": "删除时间",
+                    "type": "string"
+                },
                 "expiry_alert_days": {
                     "description": "有效期预警天数",
                     "type": "integer"
@@ -792,6 +840,10 @@ const docTemplate = `{
                 "id": {
                     "description": "主键ID",
                     "type": "integer"
+                },
+                "is_deleted": {
+                    "description": "软删除标记",
+                    "type": "boolean"
                 },
                 "name": {
                     "description": "物料名称",
