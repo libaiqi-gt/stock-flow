@@ -17,7 +17,7 @@ import (
 // @BasePath /
 //
 // main 程序入口函数
-// 负责初始化配置、数据库、路由并启动 HTTP 服务
+// 初始化配置、数据库、路由并启动 HTTP 服务
 func main() {
 	// 1. 初始化配置
 	// 从 config.yaml 加载应用配置
