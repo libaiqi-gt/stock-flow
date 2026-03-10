@@ -76,13 +76,12 @@ func (d *StatisticsDao) CountSafetyStockWarnings() (int64, error) {
 	var count int64
 	err := DB.Raw(`
 		SELECT COUNT(1)
-		FROM (
-			SELECT m.id
-			FROM wms_materials m
-			LEFT JOIN wms_inventory i ON i.material_id = m.id AND i.current_qty > 0 AND i.is_deleted = false
-			GROUP BY m.id, m.safety_stock
-			HAVING COALESCE(SUM(i.current_qty), 0) < COALESCE(m.safety_stock, 0)
-		) t
+		FROM wms_inventory i
+		JOIN wms_materials m ON i.material_id = m.id
+		WHERE i.is_deleted = false
+		  AND m.is_deleted = false
+		  AND i.current_qty > 0
+		  AND i.current_qty < COALESCE(m.safety_stock, 0)
 	`).Scan(&count).Error
 	return count, err
 }
