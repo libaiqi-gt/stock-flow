@@ -79,7 +79,7 @@ func (d *StatisticsDao) CountSafetyStockWarnings() (int64, error) {
 		FROM (
 			SELECT m.id
 			FROM wms_materials m
-			LEFT JOIN wms_inventory i ON i.material_id = m.id AND i.current_qty > 0
+			LEFT JOIN wms_inventory i ON i.material_id = m.id AND i.current_qty > 0 AND i.is_deleted = false
 			GROUP BY m.id, m.safety_stock
 			HAVING COALESCE(SUM(i.current_qty), 0) < COALESCE(m.safety_stock, 0)
 		) t
