@@ -15,7 +15,7 @@ database:
 jwt:
   secret: "stock-flow-secret-key-2026"
   issuer: "stock-flow"
-  expire: 24h
+  expire: 720h
 
 log:
   level: debug

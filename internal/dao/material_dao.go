@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	"stock-flow/internal/models"
 	"time"
 )
@@ -55,6 +56,25 @@ func (d *MaterialDao) GetByCode(code string) (*models.Material, error) {
 	var m models.Material
 	err := DB.Where("is_deleted = ? AND code = ?", false, code).First(&m).Error
 	return &m, err
+}
+
+func (d *MaterialDao) GetByID(id uint) (*models.Material, error) {
+	var m models.Material
+	err := DB.Where("is_deleted = ? AND id = ?", false, id).First(&m).Error
+	return &m, err
+}
+
+func (d *MaterialDao) UpdateByID(id uint, updates map[string]interface{}) error {
+	tx := DB.Model(&models.Material{}).
+		Where("is_deleted = ? AND id = ?", false, id).
+		Updates(updates)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return fmt.Errorf("耗材不存在")
+	}
+	return nil
 }
 
 // List 分页查询耗材列表

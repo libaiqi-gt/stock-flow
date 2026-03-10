@@ -9,10 +9,11 @@ type StatisticsService struct {
 }
 
 type DashboardStats struct {
-	TotalBatches    int64                 `json:"total_batches"`
-	WarningBatches  WarningBatchesStats   `json:"warning_batches"`
-	ExpiredBatches  int64                 `json:"expired_batches"`
-	OutboundTrend   []dao.MonthlyOutbound `json:"outbound_trend"`
+	TotalBatches            int64                 `json:"total_batches"`
+	WarningBatches          WarningBatchesStats   `json:"warning_batches"`
+	SafetyStockWarningCount int64                 `json:"safety_stock_warning_count"`
+	ExpiredBatches          int64                 `json:"expired_batches"`
+	OutboundTrend           []dao.MonthlyOutbound `json:"outbound_trend"`
 }
 
 type WarningBatchesStats struct {
@@ -47,6 +48,11 @@ func (s *StatisticsService) GetDashboardStats() (*DashboardStats, error) {
 		return nil, err
 	}
 	stats.ExpiredBatches = expired
+	safetyStockWarnings, err := s.statsDao.CountSafetyStockWarnings()
+	if err != nil {
+		return nil, err
+	}
+	stats.SafetyStockWarningCount = safetyStockWarnings
 
 	// 4. 近半年出库趋势
 	trend, err := s.statsDao.GetOutboundTrend()

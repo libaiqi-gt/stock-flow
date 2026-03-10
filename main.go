@@ -15,6 +15,9 @@ import (
 // @description LIMS-Consumable Backend API
 // @host localhost:8080
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 //
 // main 程序入口函数
 // 初始化配置、数据库、路由并启动 HTTP 服务

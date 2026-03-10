@@ -2,6 +2,7 @@ package utils
 
 import (
 	"stock-flow/internal/config"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,7 +17,12 @@ type Claims struct {
 
 func GenerateToken(userID uint, username, role string) (string, error) {
 	nowTime := time.Now()
-	expireTime := nowTime.Add(24 * time.Hour) // Default 24h, can parse from config
+	expireTime := nowTime.Add(30 * 24 * time.Hour)
+	if expStr := strings.TrimSpace(config.AppConfig.JWT.Expire); expStr != "" {
+		if d, err := time.ParseDuration(expStr); err == nil && d > 0 {
+			expireTime = nowTime.Add(d)
+		}
+	}
 
 	claims := Claims{
 		userID,

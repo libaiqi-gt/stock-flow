@@ -13,7 +13,7 @@ type StatisticsController struct {
 
 // GetDashboardStats
 // @Summary 获取仪表盘综合统计数据
-// @Description 包含库存总批次、临期预警、过期库存及近半年出库趋势
+// @Description 包含库存总批次、临期预警、安全库存预警数量、过期库存及近半年出库趋势
 // @Tags Statistics
 // @Accept json
 // @Produce json

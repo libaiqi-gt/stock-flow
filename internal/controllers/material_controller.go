@@ -17,6 +17,18 @@ type MaterialController struct {
 	materialService services.MaterialService
 }
 
+type UpdateMaterialReq struct {
+	Code             *string `json:"code,omitempty" binding:"omitempty,min=1"`               // 物料编码
+	Name             *string `json:"name,omitempty" binding:"omitempty,min=1"`               // 物料名称
+	Category         *string `json:"category,omitempty" binding:"omitempty,min=1"`           // 分类
+	Spec             *string `json:"spec,omitempty" binding:"omitempty,min=1"`               // 规格
+	Unit             *string `json:"unit,omitempty" binding:"omitempty,min=1"`               // 单位
+	Brand            *string `json:"brand,omitempty" binding:"omitempty,min=1"`              // 品牌
+	SafetyStock      *int64  `json:"safety_stock,omitempty" binding:"omitempty,gte=0"`       // 安全库存
+	OpenedExpiryDays *int    `json:"opened_expiry_days,omitempty" binding:"omitempty,gte=0"` // 开封后有效期(天)
+	ExpiryAlertDays  *int    `json:"expiry_alert_days,omitempty" binding:"omitempty,gte=0"`  // 有效期预警天数
+}
+
 // BatchImport
 // @Summary 批量导入耗材
 // @Description 上传Excel文件批量导入耗材基础信息(需管理员权限)
@@ -81,6 +93,69 @@ func (ctrl *MaterialController) Create(c *gin.Context) {
 	}
 
 	if err := ctrl.materialService.CreateMaterial(&m); err != nil {
+		response.Error(c, response.CodeServerError, err.Error())
+		return
+	}
+
+	response.Success[any](c, nil)
+}
+
+// Update
+// @Summary 编辑耗材基础信息
+// @Description 支持部分字段更新(需管理员或库管员权限)
+// @Tags Material
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "耗材ID"
+// @Param request body UpdateMaterialReq true "耗材信息"
+// @Success 200 {object} response.Response "成功"
+// @Router /api/v1/materials/{id} [put]
+func (ctrl *MaterialController) Update(c *gin.Context) {
+	ctrl.updateMaterial(c)
+}
+
+// Patch
+// @Summary 编辑耗材基础信息
+// @Description 支持部分字段更新(需管理员或库管员权限)
+// @Tags Material
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "耗材ID"
+// @Param request body UpdateMaterialReq true "耗材信息"
+// @Success 200 {object} response.Response "成功"
+// @Router /api/v1/materials/{id} [patch]
+func (ctrl *MaterialController) Patch(c *gin.Context) {
+	ctrl.updateMaterial(c)
+}
+
+func (ctrl *MaterialController) updateMaterial(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.Error(c, response.CodeBadRequest, "Invalid ID format")
+		return
+	}
+
+	var req UpdateMaterialReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, response.CodeBadRequest, err.Error())
+		return
+	}
+
+	dto := services.MaterialUpdateDTO{
+		Code:             req.Code,
+		Name:             req.Name,
+		Category:         req.Category,
+		Spec:             req.Spec,
+		Unit:             req.Unit,
+		Brand:            req.Brand,
+		SafetyStock:      req.SafetyStock,
+		OpenedExpiryDays: req.OpenedExpiryDays,
+		ExpiryAlertDays:  req.ExpiryAlertDays,
+	}
+	if err := ctrl.materialService.UpdateMaterial(uint(id), dto); err != nil {
 		response.Error(c, response.CodeServerError, err.Error())
 		return
 	}

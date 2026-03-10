@@ -71,3 +71,18 @@ func (d *StatisticsDao) GetOutboundTrend() ([]MonthlyOutbound, error) {
 
 	return results, err
 }
+
+func (d *StatisticsDao) CountSafetyStockWarnings() (int64, error) {
+	var count int64
+	err := DB.Raw(`
+		SELECT COUNT(1)
+		FROM (
+			SELECT m.id
+			FROM wms_materials m
+			LEFT JOIN wms_inventory i ON i.material_id = m.id AND i.current_qty > 0
+			GROUP BY m.id, m.safety_stock
+			HAVING COALESCE(SUM(i.current_qty), 0) < COALESCE(m.safety_stock, 0)
+		) t
+	`).Scan(&count).Error
+	return count, err
+}

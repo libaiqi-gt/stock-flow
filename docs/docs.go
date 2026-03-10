@@ -320,6 +320,50 @@ const docTemplate = `{
             }
         },
         "/api/v1/materials/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "支持部分字段更新(需管理员或库管员权限)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Material"
+                ],
+                "summary": "编辑耗材基础信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "耗材ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "耗材信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.UpdateMaterialReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "删除指定耗材(软删除，需管理员或库管员权限)",
                 "consumes": [
@@ -339,6 +383,50 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "支持部分字段更新(需管理员或库管员权限)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Material"
+                ],
+                "summary": "编辑耗材基础信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "耗材ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "耗材信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.UpdateMaterialReq"
+                        }
                     }
                 ],
                 "responses": {
@@ -559,7 +647,7 @@ const docTemplate = `{
         },
         "/api/v1/statistics/dashboard": {
             "get": {
-                "description": "包含库存总批次、临期预警、过期库存及近半年出库趋势",
+                "description": "包含库存总批次、临期预警、安全库存预警数量、过期库存及近半年出库趋势",
                 "consumes": [
                     "application/json"
                 ],
@@ -779,6 +867,56 @@ const docTemplate = `{
                 }
             }
         },
+        "controllers.UpdateMaterialReq": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "description": "品牌",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "category": {
+                    "description": "分类",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "code": {
+                    "description": "物料编码",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "expiry_alert_days": {
+                    "description": "有效期预警天数",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "name": {
+                    "description": "物料名称",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "opened_expiry_days": {
+                    "description": "开封后有效期(天)",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "safety_stock": {
+                    "description": "安全库存",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "spec": {
+                    "description": "规格",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "unit": {
+                    "description": "单位",
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
         "dao.MonthlyOutbound": {
             "type": "object",
             "properties": {
@@ -930,6 +1068,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/dao.MonthlyOutbound"
                     }
                 },
+                "safety_stock_warning_count": {
+                    "type": "integer"
+                },
                 "total_batches": {
                     "type": "integer"
                 },
@@ -1009,6 +1150,13 @@ const docTemplate = `{
                     }
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

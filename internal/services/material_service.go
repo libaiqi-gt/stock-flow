@@ -16,6 +16,18 @@ type MaterialService struct {
 	materialDao dao.MaterialDao
 }
 
+type MaterialUpdateDTO struct {
+	Code             *string
+	Name             *string
+	Category         *string
+	Spec             *string
+	Unit             *string
+	Brand            *string
+	SafetyStock      *int64
+	OpenedExpiryDays *int
+	ExpiryAlertDays  *int
+}
+
 // BatchImport 批量导入耗材
 //
 // 参数:
@@ -232,4 +244,52 @@ func (s *MaterialService) GetMaterialByCode(code string) (*models.Material, erro
 //	error: 错误
 func (s *MaterialService) GetMaterialList(page, pageSize int, name string) ([]models.Material, int64, error) {
 	return s.materialDao.List(page, pageSize, name)
+}
+
+func (s *MaterialService) UpdateMaterial(id uint, dto MaterialUpdateDTO) error {
+	existing, err := s.materialDao.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	if dto.Code != nil && *dto.Code != existing.Code {
+		m, err := s.materialDao.GetByCode(*dto.Code)
+		if err == nil && m.ID != id {
+			return fmt.Errorf("物料编码已存在")
+		}
+	}
+
+	updates := map[string]interface{}{}
+	if dto.Code != nil {
+		updates["code"] = *dto.Code
+	}
+	if dto.Name != nil {
+		updates["name"] = *dto.Name
+	}
+	if dto.Category != nil {
+		updates["category"] = *dto.Category
+	}
+	if dto.Spec != nil {
+		updates["spec"] = *dto.Spec
+	}
+	if dto.Unit != nil {
+		updates["unit"] = *dto.Unit
+	}
+	if dto.Brand != nil {
+		updates["brand"] = *dto.Brand
+	}
+	if dto.SafetyStock != nil {
+		updates["safety_stock"] = *dto.SafetyStock
+	}
+	if dto.OpenedExpiryDays != nil {
+		updates["opened_expiry_days"] = *dto.OpenedExpiryDays
+	}
+	if dto.ExpiryAlertDays != nil {
+		updates["expiry_alert_days"] = *dto.ExpiryAlertDays
+	}
+	if len(updates) == 0 {
+		return fmt.Errorf("至少需要提供一个要更新的字段")
+	}
+
+	return s.materialDao.UpdateByID(id, updates)
 }

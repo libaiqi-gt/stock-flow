@@ -42,6 +42,8 @@ func InitRouter() *gin.Engine {
 			mat.POST("", matCtrl.Create)
 			mat.POST("/import", matCtrl.BatchImport) // Add import route
 			mat.GET("", matCtrl.List)
+			mat.PUT("/:id", matCtrl.Update)
+			mat.PATCH("/:id", matCtrl.Patch)
 			mat.DELETE("/:id", matCtrl.Delete)
 		}
 
