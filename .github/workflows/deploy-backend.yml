@@ -77,7 +77,7 @@ jobs:
                   DB_HOST: app_db
                   DB_PORT: 3306
                   DB_USER: root
-                  DB_PASSWORD: stock_flow_db123456
+                  DB_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
                   DB_NAME: stock_flow
                 networks:
                   - app_network
