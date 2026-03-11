@@ -74,6 +74,7 @@ func (ctrl *InventoryController) Delete(c *gin.Context) {
 
 // BatchImport
 // @Summary 批量导入库存
+// @Description 按模板导入: 物料编号、入库数量、内部批号、有效期至；入库单号自动生成
 // @Accept multipart/form-data
 // @Produce json
 // @Param file formData file true "Excel文件"
@@ -94,8 +95,8 @@ func (ctrl *InventoryController) BatchImport(c *gin.Context) {
 
 	// 2. Check extension
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	if ext != ".xlsx" && ext != ".xls" {
-		response.Error(c, response.CodeBadRequest, "仅支持 .xlsx 或 .xls 格式")
+	if ext != ".xlsx" {
+		response.Error(c, response.CodeBadRequest, "仅支持 .xlsx 格式")
 		return
 	}
 
@@ -130,12 +131,24 @@ func (ctrl *InventoryController) BatchImport(c *gin.Context) {
 // @Success 200 {object} response.Response "列表数据"
 // @Router /api/v1/inventory [get]
 func (ctrl *InventoryController) List(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if err != nil || pageSize < 1 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 	materialName := c.Query("material_name")
 	code := c.Query("code")
 	batchNo := c.Query("batch_no")
-	status, _ := strconv.Atoi(c.DefaultQuery("status", "0"))
+	status, err := strconv.Atoi(c.DefaultQuery("status", "0"))
+	if err != nil || status < 0 {
+		status = 0
+	}
 
 	list, total, err := ctrl.inventoryService.GetInventoryList(page, pageSize, materialName, code, batchNo, status)
 	if err != nil {
@@ -144,8 +157,10 @@ func (ctrl *InventoryController) List(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"list":  list,
-		"total": total,
+		"list":      list,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
 	})
 }
 

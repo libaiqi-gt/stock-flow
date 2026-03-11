@@ -74,6 +74,7 @@ const docTemplate = `{
         },
         "/api/v1/inventory/import": {
             "post": {
+                "description": "按模板导入: 物料编号、入库数量、内部批号、有效期至；入库单号自动生成",
                 "consumes": [
                     "multipart/form-data"
                 ],

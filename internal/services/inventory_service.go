@@ -1,11 +1,14 @@
 package services
 
 import (
+	crand "crypto/rand"
 	"fmt"
 	"io"
+	"math/big"
 	"stock-flow/internal/dao"
 	"stock-flow/internal/models"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/xuri/excelize/v2"
@@ -221,7 +224,7 @@ func (s *InventoryService) BatchImport(r io.ReadSeeker, ext string) (*BatchImpor
 	}
 
 	// 必填字段
-	required := []string{"物料编码", "物料名称", "内部批号/校准编号", "数量", "自身有效到期日"}
+	required := []string{"物料编号", "入库数量", "内部批号", "有效期至"}
 	for _, field := range required {
 		if _, ok := headerMap[field]; !ok {
 			return nil, fmt.Errorf("缺少必填列: %s", field)
@@ -239,7 +242,19 @@ func (s *InventoryService) BatchImport(r io.ReadSeeker, ext string) (*BatchImpor
 			continue
 		}
 
-		if err := s.Inbound(*dto); err != nil {
+		var err error
+		for j := 0; j < 3; j++ {
+			err = s.Inbound(*dto)
+			if err == nil {
+				break
+			}
+			if strings.Contains(err.Error(), "入库单号") && strings.Contains(err.Error(), "已存在") {
+				dto.InboundNo = genInboundNo()
+				continue
+			}
+			break
+		}
+		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, fmt.Sprintf("第%d行: %v", rowIdx, err))
 		} else {
@@ -261,50 +276,70 @@ func (s *InventoryService) parseExcelRow(row []string, headerMap map[string]int,
 		return row[idx]
 	}
 
-	// Basic Validation
-	code := getVal("物料编码")
-	name := getVal("物料名称")
-	batch := getVal("内部批号/校准编号")
-	qtyStr := getVal("数量")
-	currentQtyStr := getVal("当前库存数量")
-	expiryStr := getVal("自身有效到期日")
-	inboundNo := getVal("入库单号")
+	code := strings.TrimSpace(getVal("物料编号"))
+	batch := strings.TrimSpace(getVal("内部批号"))
+	qtyStr := strings.TrimSpace(getVal("入库数量"))
+	expiryStr := strings.TrimSpace(getVal("有效期至"))
 
-	if code == "" || name == "" || batch == "" || qtyStr == "" || expiryStr == "" || inboundNo == "" {
+	if code == "" || batch == "" || qtyStr == "" || expiryStr == "" {
 		return nil, fmt.Sprintf("第%d行: 缺少必填字段", rowIdx)
 	}
 
-	qty, err := strconv.ParseInt(qtyStr, 10, 64)
-	if err != nil || qty < 0 {
-		return nil, fmt.Sprintf("第%d行: 数量格式错误", rowIdx)
+	if _, err := s.materialDao.GetByCode(code); err != nil {
+		return nil, fmt.Sprintf("第%d行: 物料编号不存在: %s", rowIdx, code)
 	}
 
-	var currentQty int64
-	if currentQtyStr != "" {
-		currentQty, err = strconv.ParseInt(currentQtyStr, 10, 64)
-		if err != nil || currentQty < 0 {
-			return nil, fmt.Sprintf("第%d行: 当前库存数量格式错误", rowIdx)
+	qtyFloat, err := strconv.ParseFloat(qtyStr, 64)
+	if err != nil {
+		return nil, fmt.Sprintf("第%d行: 入库数量格式错误", rowIdx)
+	}
+	if qtyFloat <= 0 {
+		return nil, fmt.Sprintf("第%d行: 入库数量必须大于0", rowIdx)
+	}
+	qty := int64(qtyFloat)
+	if float64(qty) != qtyFloat {
+		return nil, fmt.Sprintf("第%d行: 入库数量必须为整数", rowIdx)
+	}
+
+	if isDigits(expiryStr) {
+		if serial, err := strconv.ParseFloat(expiryStr, 64); err == nil && serial > 0 {
+			if t, err := excelize.ExcelDateToTime(serial, false); err == nil {
+				expiryStr = t.Format("2006-01-02")
+			}
 		}
-	} else {
-		// If not present in Excel, default to Initial Qty
-		currentQty = qty
 	}
 
 	dto := &InboundDTO{
 		MaterialCode:    code,
-		MaterialName:    name,
-		Category:        getVal("物料类型"),
-		Spec:            getVal("规格"),
-		Unit:            getVal("单位"),
-		Brand:           getVal("厂家/品牌"),
 		BatchNo:         batch,
 		ExpiryDate:      expiryStr,
 		Quantity:        qty,
-		CurrentQuantity: currentQty,
-		InboundNo:       inboundNo,
-		Mode:            "append", // Default append for import
+		CurrentQuantity: qty,
+		InboundNo:       genInboundNo(),
+		Mode:            "append",
 	}
 	return dto, ""
+}
+
+func genInboundNo() string {
+	ts := time.Now().UTC().Format("060102150405")
+	n, err := crand.Int(crand.Reader, big.NewInt(1000))
+	if err != nil {
+		return fmt.Sprintf("IB%s%d", ts, time.Now().UnixNano()%1000)
+	}
+	return fmt.Sprintf("IB%s%d", ts, n.Int64())
+}
+
+func isDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // GetInventoryList 综合查询库存

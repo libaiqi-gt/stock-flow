@@ -133,6 +133,15 @@ func (d *InventoryDao) List(page, pageSize int, materialName, code, batchNo stri
 	// status: 0 all, 1 normal, 2 warning, 3 expired
 	var list []models.Inventory
 	var total int64
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 
 	// Explicitly specify table alias for is_deleted to avoid ambiguity when joining
 	db := DB.Model(&models.Inventory{}).Where("wms_inventory.is_deleted = ?", false).Preload("Material")
@@ -170,7 +179,10 @@ func (d *InventoryDao) List(page, pageSize int, materialName, code, batchNo stri
 		return nil, 0, err
 	}
 
-	err = db.Offset((page - 1) * pageSize).Limit(pageSize).Find(&list).Error
+	err = db.Order("wms_inventory.created_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&list).Error
 	return list, total, err
 }
 
